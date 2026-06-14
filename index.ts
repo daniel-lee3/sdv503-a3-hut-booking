@@ -1,3 +1,6 @@
+import readline = require("node:readline");
+import process = require("node:process");
+
 interface Hut {
     id: number,
     name: string,
@@ -13,3 +16,8 @@ interface Booking {
     nights: number,
     partySize: number
 }
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+});
