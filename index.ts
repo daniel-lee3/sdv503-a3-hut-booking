@@ -22,6 +22,22 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
+async function validateInput(input: string, isNumber: boolean, isDate: boolean, defaultValue: any) {
+    // string validation and default values
+    if (input === "") {
+        if (defaultValue === undefined) {
+            return {
+                success: false,
+                result: undefined
+            }
+        }
+        return {
+            success: true,
+            result: defaultValue
+        }
+    }
+}
+
 async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
     let validInput = false;
 
