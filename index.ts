@@ -73,10 +73,19 @@ async function validateInput(input: string, isNumber: boolean, isDate: boolean, 
 }
 
 async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
-    let validInput = false;
+    let validatedInput: any = undefined;
 
-    const userInput = (await rl.question(question)).trim();
-    return userInput;
+    while (true) {
+        const userInput: string = (await rl.question(question)).trim();
+        validatedInput = await validateInput(userInput, isNumber, isDate, defaultValue);
+
+        if (validatedInput.success) {
+            return validatedInput.result;
+        } else {
+            console.log(errorMessage);
+            continue;
+        }
+    }
 }
 
 const bookings: Array<Booking> = [];
