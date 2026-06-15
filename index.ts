@@ -111,7 +111,8 @@ async function main() {
     1. Add new booking
     2. Cancel a booking
     3. View bookings
-`, "Please provide an input of 1, 2 or 3", {isNumber: true, minNum: 1, maxNum: 3});
+    4. Quit
+`, "Please provide an input of 1, 2, 3 or 4", {isNumber: true, minNum: 1, maxNum: 3});
 
     switch(task) {
         case 1:
@@ -120,8 +121,10 @@ async function main() {
             break;
         case 3:
             break;
+        case 4:
+            break;
         default:
-            console.log("Please provide an input of 1, 2 or 3");
+            console.log("Please provide an input of 1, 2, 3 or 4");
             break;
     }
 }
