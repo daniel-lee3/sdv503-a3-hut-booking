@@ -51,6 +51,25 @@ async function validateInput(input: string, isNumber: boolean, isDate: boolean, 
             }
         }
     }
+    
+    // Date validation
+    if (isDate) {
+        const dayInput = input.split("-").reverse().join("-");
+        const date = new Date(dayInput);
+        if (isNaN(date.getTime())) {
+            return {
+                success: false,
+                result: undefined
+            }
+        } else {
+            return {
+                success: true,
+                result: date
+            }
+        }
+    }
+    // Input is a string, send the user input
+    return input
 }
 
 async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
