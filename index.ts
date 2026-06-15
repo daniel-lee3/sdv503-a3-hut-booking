@@ -1,4 +1,4 @@
-import readline = require("node:readline");
+import readline = require("node:readline/promises");
 import process = require("node:process");
 
 interface Hut {
@@ -21,5 +21,12 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
+
+async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
+    let validInput = false;
+
+    const userInput = (await rl.question(question)).trim();
+    return userInput;
+}
 
 const bookings: Array<Booking> = [];
