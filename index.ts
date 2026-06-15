@@ -36,6 +36,21 @@ async function validateInput(input: string, isNumber: boolean, isDate: boolean, 
             result: defaultValue
         }
     }
+    // Number validation
+    if (isNumber) {
+        const numberInput = Number(input);
+        if (isNaN(numberInput)) {
+            return {
+                success: false,
+                result: undefined
+            }
+        } else {
+            return {
+                success: true,
+                result: numberInput
+            }
+        }
+    }
 }
 
 async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
