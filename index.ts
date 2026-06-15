@@ -17,15 +17,23 @@ interface Booking {
     partySize: number
 }
 
+interface ValidationArgs {
+    isNumber?: boolean,
+    isDate?: boolean,
+    defaultValue?: any,
+    minNum?: number,
+    maxNum?: number
+}
+
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-async function validateInput(input: string, isNumber: boolean, isDate: boolean, defaultValue: any) {
+async function validateInput(input: string, additionalArgs: ValidationArgs) {
     // string validation and default values
     if (input === "") {
-        if (defaultValue === undefined) {
+        if (additionalArgs.defaultValue === undefined) {
             return {
                 success: false,
                 result: undefined
@@ -33,11 +41,11 @@ async function validateInput(input: string, isNumber: boolean, isDate: boolean, 
         }
         return {
             success: true,
-            result: defaultValue
+            result: additionalArgs.defaultValue
         }
     }
     // Number validation
-    if (isNumber) {
+    if (additionalArgs.isNumber) {
         const numberInput = Number(input);
         if (isNaN(numberInput)) {
             return {
@@ -45,39 +53,47 @@ async function validateInput(input: string, isNumber: boolean, isDate: boolean, 
                 result: undefined
             }
         } else {
+            if (numberInput < (additionalArgs.minNum || -Infinity) || numberInput > (additionalArgs.maxNum || Infinity)) {
+                return {
+                    success: false,
+                    result: undefined
+                }
+            }
             return {
                 success: true,
                 result: numberInput
             }
         }
     }
-    
     // Date validation
-    if (isDate) {
+    if (additionalArgs.isDate) {
         const dayInput = input.split("-").reverse().join("-");
         const date = new Date(dayInput);
         if (isNaN(date.getTime())) {
             return {
                 success: false,
                 result: undefined
-            }
+            };
         } else {
             return {
                 success: true,
                 result: date
-            }
+            };
         }
     }
     // Input is a string, send the user input
-    return input
+    return {
+        success: true,
+        result: input
+    };
 }
 
-async function askQuestion(question: string, errorMessage: string, isNumber: boolean = false, isDate: boolean = false, defaultValue?: any) {
+async function askQuestion(question: string, errorMessage: string, additionalArgs: ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100}): Promise<any> {
     let validatedInput: any = undefined;
 
     while (true) {
         const userInput: string = (await rl.question(question)).trim();
-        validatedInput = await validateInput(userInput, isNumber, isDate, defaultValue);
+        validatedInput = await validateInput(userInput, additionalArgs);
 
         if (validatedInput.success) {
             return validatedInput.result;
@@ -89,3 +105,27 @@ async function askQuestion(question: string, errorMessage: string, isNumber: boo
 }
 
 const bookings: Array<Booking> = [];
+
+async function main() {
+    const task: number = await askQuestion(`What would you like to do?
+    1. Add new booking
+    2. Cancel a booking
+    3. View bookings
+`, "Please provide an input of 1, 2 or 3", {isNumber: true, minNum: 1, maxNum: 3});
+
+    switch(task) {
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        default:
+            console.log("Please provide an input of 1, 2 or 3");
+            break;
+    }
+}
+
+main().then(() => {
+    rl.close()
+})
