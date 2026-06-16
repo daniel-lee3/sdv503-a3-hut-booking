@@ -178,7 +178,7 @@ async function main() {
                 const partySize: number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
-                const conflict = await checkConflict(arrivalDate, stayLength, partySize, hutId);
+                const conflict: boolean = await checkConflict(arrivalDate, stayLength, partySize, hutId);
                 if (conflict) {
                     console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
                     break;
