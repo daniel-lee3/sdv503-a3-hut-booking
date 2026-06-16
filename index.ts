@@ -117,6 +117,7 @@ async function main() {
         
         switch(task) {
             case 1:
+                const tramperName = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
                 break;
             case 2:
                 break;
