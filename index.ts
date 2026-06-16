@@ -107,25 +107,26 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
 const bookings: Array<Booking> = [];
 
 async function main() {
-    const task: number = await askQuestion(`What would you like to do?
-    1. Add new booking
-    2. Cancel a booking
-    3. View bookings
-    4. Quit
-`, "Please provide an input of 1, 2, 3 or 4", {isNumber: true, minNum: 1, maxNum: 3});
-
-    switch(task) {
-        case 1:
-            break;
-        case 2:
-            break;
-        case 3:
-            break;
-        case 4:
-            break;
-        default:
-            console.log("Please provide an input of 1, 2, 3 or 4");
-            break;
+    let exit = false;
+    while (!exit) {
+        const task: number = await askQuestion(`What would you like to do?
+        1. Add new booking
+        2. View bookings
+        3. Quit
+    `, "Please provide an input of 1, 2 or 3", {isNumber: true, minNum: 1, maxNum: 3});
+        
+        switch(task) {
+            case 1:
+                break;
+            case 2:
+                break;
+            case 3:
+                exit = true;
+                break;
+            default:
+                console.log("Please provide an input of 1, 2 or 3");
+                break;
+        }
     }
 }
 
