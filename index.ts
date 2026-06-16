@@ -77,7 +77,7 @@ async function validateInput(input: string, additionalArgs: ValidationArgs) {
             };
         } else {
             if (additionalArgs.futureOnly) {
-                if (date.getTime() > Date.now() + 86400000) {
+                if (date.getTime() > Date.now()) {
                     return {
                         success: true,
                         result: date
@@ -118,7 +118,27 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
     }
 }
 
-const huts: Array<Hut> = [];
+async function getOccupiedSpaces(hutId: number, day: Date): Promise<number> {
+    const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
+        const arrival: number = booking.arrivalDate.getTime()
+        const checkout: number = arrival + (booking.nights * 86400000)
+        return booking.hut.id === hutId && arrival <= day.getTime() && checkout > day.getTime()
+    })
+    return effectiveBookings.reduce((total, booking) => total + booking.partySize, 0);
+}
+
+async function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number) {
+    const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
+}
+
+const huts: Array<Hut> = [
+    {
+        id: 1,
+        name: "Mintaro Hut",
+        location: "Milford Track",
+        capacity: 40
+    }
+];
 const bookings: Array<Booking> = [];
 
 async function main() {
@@ -133,7 +153,7 @@ async function main() {
         switch(task) {
             case 1:
                 const tramperName: String = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
-                const hutId: Number = await askQuestion("What hut is the tramper requesting? ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
+                const hutId: Number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
                 const partySize: Number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: Number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
