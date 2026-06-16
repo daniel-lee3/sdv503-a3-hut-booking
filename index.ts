@@ -20,6 +20,7 @@ interface Booking {
 interface ValidationArgs {
     isNumber?: boolean,
     isDate?: boolean,
+    futureOnly?: boolean,
     defaultValue?: any,
     minNum?: number,
     maxNum?: number
@@ -75,6 +76,19 @@ async function validateInput(input: string, additionalArgs: ValidationArgs) {
                 result: undefined
             };
         } else {
+            if (additionalArgs.futureOnly) {
+                if (date.getTime() > Date.now() + 86400000) {
+                    return {
+                        success: true,
+                        result: date
+                    };
+                } else {
+                    return {
+                        success: false,
+                        result: undefined
+                    };
+                }
+            }
             return {
                 success: true,
                 result: date
@@ -88,7 +102,7 @@ async function validateInput(input: string, additionalArgs: ValidationArgs) {
     };
 }
 
-async function askQuestion(question: string, errorMessage: string, additionalArgs: ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100}): Promise<any> {
+async function askQuestion(question: string, errorMessage: string, additionalArgs: ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100, futureOnly: false}): Promise<any> {
     let validatedInput: any = undefined;
 
     while (true) {
@@ -118,9 +132,10 @@ async function main() {
         
         switch(task) {
             case 1:
-                const tramperName = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
-                const hutId = await askQuestion("What hut is the tramper requesting? ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
-                const partySize = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
+                const tramperName: String = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
+                const hutId: Number = await askQuestion("What hut is the tramper requesting? ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
+                const partySize: Number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
+                const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD-MM-YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 break;
             case 2:
                 break;
