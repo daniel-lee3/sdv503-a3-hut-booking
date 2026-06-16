@@ -118,6 +118,15 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
     }
 }
 
+async function getHutFromId(hutId: number): Promise<Hut|null> {
+    for (const hut of huts) {
+        if (hut.id === hutId) {
+            return hut
+        }
+    }
+    return null;
+}
+
 async function getOccupiedSpaces(hutId: number, day: Date): Promise<number> {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
         const arrival: number = booking.arrivalDate.getTime()
@@ -127,8 +136,20 @@ async function getOccupiedSpaces(hutId: number, day: Date): Promise<number> {
     return effectiveBookings.reduce((total, booking) => total + booking.partySize, 0);
 }
 
-async function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number) {
+async function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number): Promise<boolean> {
+    const hut: Hut|null = await getHutFromId(hutId);
+    if (hut === null) {
+        return true;
+    }
+
     const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
+    for (let i: number = startDay.getTime(); i < endDay.getTime(); i = i + 86400000) {
+        const occupied = await getOccupiedSpaces(hutId, new Date(i))
+        if (hut.capacity < occupied + partySize) {
+            return true;
+        }
+    }
+    return false;
 }
 
 const huts: Array<Hut> = [
