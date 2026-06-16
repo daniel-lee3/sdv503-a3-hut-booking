@@ -104,6 +104,7 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
     }
 }
 
+const huts: Array<Hut> = [];
 const bookings: Array<Booking> = [];
 
 async function main() {
@@ -118,6 +119,7 @@ async function main() {
         switch(task) {
             case 1:
                 const tramperName = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
+                const hutId = await askQuestion("What hut is the tramper requesting?", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
                 break;
             case 2:
                 break;
