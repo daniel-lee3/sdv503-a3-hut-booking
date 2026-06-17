@@ -195,7 +195,8 @@ async function main() {
                     arrivalDate: arrivalDate,
                     nights: stayLength,
                     partySize: partySize
-                }
+                };
+                bookings.push(booking);
                 break;
             case 2:
                 break;
