@@ -175,6 +175,11 @@ async function main() {
             case 1:
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
                 const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
+                const hut: Hut|null = await getHutFromId(hutId)
+                if (hut === null) {
+                    console.log(`Hut ${hutId} is an invalid id`);
+                    break;
+                }
                 const partySize: number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
@@ -182,6 +187,14 @@ async function main() {
                 if (conflict) {
                     console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
                     break;
+                }
+                const booking: Booking = {
+                    id: bookings.length + 1,
+                    tramperName: tramperName,
+                    hut: hut,
+                    arrivalDate: arrivalDate,
+                    nights: stayLength,
+                    partySize: partySize
                 }
                 break;
             case 2:
