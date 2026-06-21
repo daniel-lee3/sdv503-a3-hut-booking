@@ -127,6 +127,14 @@ function getHutFromId(hutId: number): Hut|null {
     return null;
 }
 
+function getBookingFromId(bookingId: number): Booking|null {
+    for (const booking of bookings) {
+        if (booking.id === bookingId) {
+            return booking;
+        }
+    }
+}
+
 function getOccupiedSpaces(hutId: number, day: Date): number {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
         const arrival: number = booking.arrivalDate.getTime()
