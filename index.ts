@@ -168,6 +168,9 @@ function checkConflict(startDay: Date, stayLength: number, partySize: number, hu
 function bookingToString(booking: Booking): string {
     const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`
     const lines = []
+    if (booking.cancelled) {
+        lines.push("CANCELLED")
+    }
     lines.push(`${heading}`);
     lines.push(`Tramper: ${booking.tramperName}`);
     lines.push(`Hut #${booking.hut.id}`);
