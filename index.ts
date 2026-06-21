@@ -153,14 +153,16 @@ function checkConflict(startDay: Date, stayLength: number, partySize: number, hu
 }
 
 function bookingToString(booking: Booking): string {
+    const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`
     const lines = []
-    lines.push(`========== Booking #${booking.id} ==========`);
+    lines.push(`${heading}`);
     lines.push(`Tramper: ${booking.tramperName}`);
-    lines.push(`Hut #${booking.hut}`);
-    lines.push(`====================`)
-    lines.push(`Arrival date: ${booking.arrivalDate.toDateString}`);
+    lines.push(`Hut #${booking.hut.id}`);
+    lines.push(`=`.repeat(heading.length));
+    lines.push(`Arrival date: ${booking.arrivalDate.toDateString()}`);
     lines.push(`Time of stay: ${booking.nights} days`);
-    lines.push(`Party size of ${booking.partySize}`);
+    lines.push(`Party size: ${booking.partySize}`);
+    lines.push(`=`.repeat(heading.length));
 
     return lines.join("\n");
 }
@@ -211,6 +213,7 @@ async function main() {
                     partySize: partySize
                 };
                 bookings.push(booking);
+                console.log(bookingToString(booking));
                 break;
             case 2:
                 break;
