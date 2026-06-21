@@ -31,7 +31,7 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-async function validateInput(input: string, additionalArgs: ValidationArgs) {
+function validateInput(input: string, additionalArgs: ValidationArgs) {
     // string validation and default values
     if (input === "") {
         if (additionalArgs.defaultValue === undefined) {
@@ -107,7 +107,7 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
 
     while (true) {
         const userInput: string = (await rl.question(question)).trim();
-        validatedInput = await validateInput(userInput, additionalArgs);
+        validatedInput = validateInput(userInput, additionalArgs);
 
         if (validatedInput.success) {
             return validatedInput.result;
@@ -118,7 +118,7 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
     }
 }
 
-async function getHutFromId(hutId: number): Promise<Hut|null> {
+function getHutFromId(hutId: number): Hut|null {
     for (const hut of huts) {
         if (hut.id === hutId) {
             return hut
@@ -127,7 +127,7 @@ async function getHutFromId(hutId: number): Promise<Hut|null> {
     return null;
 }
 
-async function getOccupiedSpaces(hutId: number, day: Date): Promise<number> {
+function getOccupiedSpaces(hutId: number, day: Date): number {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
         const arrival: number = booking.arrivalDate.getTime()
         const checkout: number = arrival + (booking.nights * 86400000)
@@ -136,20 +136,33 @@ async function getOccupiedSpaces(hutId: number, day: Date): Promise<number> {
     return effectiveBookings.reduce((total, booking) => total + booking.partySize, 0);
 }
 
-async function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number): Promise<boolean> {
-    const hut: Hut|null = await getHutFromId(hutId);
+function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number): boolean {
+    const hut: Hut|null = getHutFromId(hutId);
     if (hut === null) {
         return true;
     }
 
     const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
     for (let i: number = startDay.getTime(); i < endDay.getTime(); i = i + 86400000) {
-        const occupied = await getOccupiedSpaces(hutId, new Date(i))
+        const occupied = getOccupiedSpaces(hutId, new Date(i))
         if (hut.capacity < occupied + partySize) {
             return true;
         }
     }
     return false;
+}
+
+function bookingToString(booking: Booking): string {
+    const lines = []
+    lines.push(`========== Booking #${booking.id} ==========`);
+    lines.push(`Tramper: ${booking.tramperName}`);
+    lines.push(`Hut #${booking.hut}`);
+    lines.push(`====================`)
+    lines.push(`Arrival date: ${booking.arrivalDate.toDateString}`);
+    lines.push(`Time of stay: ${booking.nights} days`);
+    lines.push(`Party size of ${booking.partySize}`);
+
+    return lines.join("\n");
 }
 
 const huts: Array<Hut> = [
@@ -166,16 +179,17 @@ async function main() {
     let exit = false;
     while (!exit) {
         const task: number = await askQuestion(`What would you like to do?
-        1. Add new booking
-        2. View bookings
-        3. Quit
-    `, "Please provide an input of 1, 2 or 3", {isNumber: true, minNum: 1, maxNum: 3});
+    1. Add new booking
+    2. View bookings
+    3. Cancel booking
+    4. Quit
+`, "Please provide an input of 1, 2, 3 or 4", {isNumber: true, minNum: 1, maxNum: 4});
         
         switch(task) {
             case 1:
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
                 const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
-                const hut: Hut|null = await getHutFromId(hutId)
+                const hut: Hut|null = getHutFromId(hutId)
                 if (hut === null) {
                     console.log(`Hut ${hutId} is an invalid id`);
                     break;
@@ -183,7 +197,7 @@ async function main() {
                 const partySize: number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
-                const conflict: boolean = await checkConflict(arrivalDate, stayLength, partySize, hutId);
+                const conflict: boolean = checkConflict(arrivalDate, stayLength, partySize, hutId);
                 if (conflict) {
                     console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
                     break;
@@ -201,10 +215,12 @@ async function main() {
             case 2:
                 break;
             case 3:
+                break;
+            case 4:
                 exit = true;
                 break;
             default:
-                console.log("Please provide an input of 1, 2 or 3");
+                console.log("Please provide an input of 1, 2, 3 or 4");
                 break;
         }
     }
