@@ -1,5 +1,6 @@
 import readline = require("node:readline/promises");
 import process = require("node:process");
+import nodeUtil = require("node:util");
 
 interface Hut {
     id: number,
@@ -14,7 +15,8 @@ interface Booking {
     hut: Hut,
     arrivalDate: Date,
     nights: number,
-    partySize: number
+    partySize: number,
+    cancelled: boolean
 }
 
 interface ValidationArgs {
@@ -127,8 +129,19 @@ function getHutFromId(hutId: number): Hut|null {
     return null;
 }
 
+function getBookingFromId(bookingId: number): Booking|undefined {
+    for (const booking of bookings) {
+        if (booking.id === bookingId) {
+            return booking;
+        }
+    }
+}
+
 function getOccupiedSpaces(hutId: number, day: Date): number {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
+        if (booking.cancelled) {
+            return false;
+        }
         const arrival: number = booking.arrivalDate.getTime()
         const checkout: number = arrival + (booking.nights * 86400000)
         return booking.hut.id === hutId && arrival <= day.getTime() && checkout > day.getTime()
@@ -155,6 +168,9 @@ function checkConflict(startDay: Date, stayLength: number, partySize: number, hu
 function bookingToString(booking: Booking): string {
     const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`
     const lines = []
+    if (booking.cancelled) {
+        lines.push("CANCELLED")
+    }
     lines.push(`${heading}`);
     lines.push(`Tramper: ${booking.tramperName}`);
     lines.push(`Hut #${booking.hut.id}`);
@@ -210,14 +226,15 @@ async function main() {
                     hut: hut,
                     arrivalDate: arrivalDate,
                     nights: stayLength,
-                    partySize: partySize
+                    partySize: partySize,
+                    cancelled: false
                 };
                 bookings.push(booking);
                 console.log(`\n${bookingToString(booking)}\n`);
                 break;
             case 2:
                 const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
-                const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 0, maxNum: huts.length-1, defaultValue: -1});
+                const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (leave blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 1, maxNum: huts.length, defaultValue: -1});
                 const bookingsInHut: Array<Booking> = bookings.filter((bookingInfo) => {
                     if (viewingHutId === -1) {
                         return true;
@@ -244,6 +261,19 @@ async function main() {
                     break;
                 }
             case 3:
+                while (true) {
+                    const bookingId: number = await askQuestion("What booking would you like to cancel? Booking #", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length});
+                    const booking: Booking|undefined = getBookingFromId(bookingId);
+                    if (booking === undefined) {
+                        continue;
+                    }
+                    if (booking.arrivalDate < new Date(Date.now())) {
+                        console.log("It is too late to cancel this booking");
+                        break;
+                    }
+                    booking.cancelled = true;
+                    break;
+                }
                 break;
             case 4:
                 exit = true;
