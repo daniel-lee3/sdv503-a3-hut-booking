@@ -213,10 +213,36 @@ async function main() {
                     partySize: partySize
                 };
                 bookings.push(booking);
-                console.log(bookingToString(booking));
+                console.log(`\n${bookingToString(booking)}\n`);
                 break;
             case 2:
-                break;
+                const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
+                const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 0, maxNum: huts.length-1, defaultValue: -1});
+                const bookingsInHut: Array<Booking> = bookings.filter((bookingInfo) => {
+                    if (viewingHutId === -1) {
+                        return true;
+                    }
+                    if (getHutFromId(viewingHutId) === bookingInfo.hut) {
+                        return true;
+                    }
+                    return false;
+                })
+                if (day === null) {
+                    bookingsInHut.forEach(element => {
+                        console.log(`\n${bookingToString(element)}\n`);
+                    });
+                    break;
+                } else {
+                    const availableBookings: Array<Booking> = bookingsInHut.filter((bookingInfo) => {
+                        const startDay: Date = bookingInfo.arrivalDate;
+                        const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
+                        return startDay <= day && endDay >= day;
+                    })
+                    availableBookings.forEach(element => {
+                        console.log(`\n${bookingToString(element)}\n`);
+                    });
+                    break;
+                }
             case 3:
                 break;
             case 4:
