@@ -262,7 +262,7 @@ async function main() {
                 }
             case 3:
                 while (true) {
-                    const bookingId: number = await askQuestion("What booking would you like to cancel?", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length});
+                    const bookingId: number = await askQuestion("What booking would you like to cancel? Booking #", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length});
                     const booking: Booking|undefined = getBookingFromId(bookingId);
                     if (booking === undefined) {
                         continue;
