@@ -72,6 +72,13 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
                     result: undefined
                 }
             }
+            // Is number a decimal
+            if (numberInput % 1 !== 0) {
+                return {
+                    success: false,
+                    result: undefined
+                }
+            }
             return {
                 success: true,
                 result: numberInput
@@ -314,7 +321,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                     console.log(`Hut ${hutId} is an invalid id`);
                     break;
                 }
-                const partySize: number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
+                const partySize: number = await askQuestion("What is the size of the party? (leave blank for 1) ", "Please enter a valid whole number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
                 const conflict: boolean = checkConflict(bookings, arrivalDate, stayLength, partySize, hutId);
