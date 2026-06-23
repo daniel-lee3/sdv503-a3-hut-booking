@@ -1,6 +1,7 @@
 import readline = require("node:readline/promises");
 import process = require("node:process");
 import nodeUtil = require("node:util");
+import fs = require("node:fs/promises");
 
 interface Hut {
     id: number,
@@ -129,7 +130,7 @@ function getHutFromId(hutId: number): Hut|null {
     return null;
 }
 
-function getBookingFromId(bookingId: number): Booking|undefined {
+function getBookingFromId(bookings: Array<Booking>, bookingId: number): Booking|undefined {
     for (const booking of bookings) {
         if (booking.id === bookingId) {
             return booking;
@@ -137,7 +138,7 @@ function getBookingFromId(bookingId: number): Booking|undefined {
     }
 }
 
-function getOccupiedSpaces(hutId: number, day: Date): number {
+function getOccupiedSpaces(bookings: Array<Booking>, hutId: number, day: Date): number {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
         if (booking.cancelled) {
             return false;
@@ -149,7 +150,7 @@ function getOccupiedSpaces(hutId: number, day: Date): number {
     return effectiveBookings.reduce((total, booking) => total + booking.partySize, 0);
 }
 
-function checkConflict(startDay: Date, stayLength: number, partySize: number, hutId: number): boolean {
+function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: number, partySize: number, hutId: number): boolean {
     const hut: Hut|null = getHutFromId(hutId);
     if (hut === null) {
         return true;
@@ -157,7 +158,7 @@ function checkConflict(startDay: Date, stayLength: number, partySize: number, hu
 
     const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
     for (let i: number = startDay.getTime(); i < endDay.getTime(); i = i + 86400000) {
-        const occupied = getOccupiedSpaces(hutId, new Date(i))
+        const occupied = getOccupiedSpaces(bookings, hutId, new Date(i))
         if (hut.capacity < occupied + partySize) {
             return true;
         }
@@ -191,9 +192,49 @@ const huts: Array<Hut> = [
         capacity: 40
     }
 ];
-const bookings: Array<Booking> = [];
 
-async function main() {
+const bookingsFileName: string = "stored_bookings.json";
+const waitlistFileName: string = "waitlist.json";
+
+async function updateBookings(fileName: string, bookings: Array<Booking>): Promise<void> {
+    try {
+        await fs.writeFile(fileName, JSON.stringify(bookings, null, 2), "utf8");
+        console.log("Successfully saved!");
+    } catch (error) {
+        console.log("Something went wrong when trying to save.");
+    }
+    
+}
+
+async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
+    const bookingsArray: Array<Booking> = []
+    await fs.readFile(fileName, "utf8").then((value) => {
+        const storedJson: Array<{id: number, tramperName: string, hut: Hut, arrivalDate: Date, nights: number, partySize: number, cancelled: boolean}> = JSON.parse(value);
+        storedJson.forEach(element => {
+            const booking: Booking = {
+                id: element.id,
+                tramperName: element.tramperName,
+                hut: element.hut,
+                arrivalDate: new Date(element.arrivalDate),
+                nights: element.nights,
+                partySize: element.partySize,
+                cancelled: element.cancelled
+            }
+            bookingsArray.push(booking);
+        });
+        return bookingsArray;
+    }).catch((error) => {
+        if (error.code === "ENOENT") {
+            fs.writeFile(fileName, "[]", { flag: 'wx' });
+            return [];
+        }
+        console.log(`Something went wrong while trying to load booking information: ${error}`)
+        process.exit();
+    })
+    return bookingsArray;
+}
+
+async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
     let exit = false;
     while (!exit) {
         const task: number = await askQuestion(`What would you like to do?
@@ -206,7 +247,7 @@ async function main() {
         switch(task) {
             case 1:
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
-                const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 0, maxNum: huts.length-1});
+                const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 1, maxNum: huts.length});
                 const hut: Hut|null = getHutFromId(hutId)
                 if (hut === null) {
                     console.log(`Hut ${hutId} is an invalid id`);
@@ -215,7 +256,7 @@ async function main() {
                 const partySize: number = await askQuestion("What is the size of the party? (leave blank if only 1) ", "Please enter a valid number", {isNumber: true, minNum: 1, defaultValue: 1});
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
-                const conflict: boolean = checkConflict(arrivalDate, stayLength, partySize, hutId);
+                const conflict: boolean = checkConflict(bookings, arrivalDate, stayLength, partySize, hutId);
                 if (conflict) {
                     console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
                     break;
@@ -230,6 +271,7 @@ async function main() {
                     cancelled: false
                 };
                 bookings.push(booking);
+                await updateBookings(bookingsFileName, bookings);
                 console.log(`\n${bookingToString(booking)}\n`);
                 break;
             case 2:
@@ -252,8 +294,8 @@ async function main() {
                 } else {
                     const availableBookings: Array<Booking> = bookingsInHut.filter((bookingInfo) => {
                         const startDay: Date = bookingInfo.arrivalDate;
-                        const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
-                        return startDay <= day && endDay >= day;
+                        const endDay: Date = new Date(startDay.getTime() + (bookingInfo.nights * 86400000));
+                        return startDay <= day && endDay > day;
                     })
                     availableBookings.forEach(element => {
                         console.log(`\n${bookingToString(element)}\n`);
@@ -263,7 +305,7 @@ async function main() {
             case 3:
                 while (true) {
                     const bookingId: number = await askQuestion("What booking would you like to cancel? Booking #", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length});
-                    const booking: Booking|undefined = getBookingFromId(bookingId);
+                    const booking: Booking|undefined = getBookingFromId(bookings, bookingId);
                     if (booking === undefined) {
                         continue;
                     }
@@ -272,6 +314,16 @@ async function main() {
                         break;
                     }
                     booking.cancelled = true;
+                    // Is there a booking in the waitlist
+                    while (waitlist[0] !== undefined) {
+                        if (!checkConflict(bookings, waitlist[0].arrivalDate, waitlist[0].nights, waitlist[0].partySize, waitlist[0].hut.id)) {
+                            const newBooking: Booking = waitlist.shift()!
+                            bookings.push(newBooking);
+                        } else {
+                            break;
+                        }
+                    }
+                    await updateBookings(bookingsFileName, bookings);
                     break;
                 }
                 break;
@@ -285,6 +337,11 @@ async function main() {
     }
 }
 
-main().then(() => {
-    rl.close()
-})
+async function start() {
+    const bookings: Array<Booking> = await getStoredBookings(bookingsFileName);
+    const waitlist: Array<Booking> = await getStoredBookings(waitlistFileName);
+    await main(bookings, waitlist);
+    rl.close();
+}
+
+start();
