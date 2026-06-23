@@ -10,7 +10,6 @@
     "type": "git",
     "url": "git+https://github.com/daniel-lee3/sdv503-a3-hut-booking.git"
   },
-  
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -49,5 +48,8 @@
       "dev": true,
       "license": "MIT"
     }
+  },
+  "dependencies": {
+    "typescript": "^6.0.3"
   }
 }
