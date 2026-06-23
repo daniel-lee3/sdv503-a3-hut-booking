@@ -1,7 +1,8 @@
 import readline = require("node:readline/promises");
 import process = require("node:process");
 import nodeUtil = require("node:util");
-import fs = require("node:fs/promises");
+import validation = require("./validation.js");
+import fileManager = require("./file_management.js");
 
 // Data structure for Hut
 interface Hut {
@@ -22,143 +23,21 @@ interface Booking {
     cancelled: boolean
 }
 
-// Data structure for Validation, (Primarily for DX)
-interface ValidationArgs {
-    isNumber?: boolean,
-    isDate?: boolean,
-    isBoolean?: boolean,
-    futureOnly?: boolean,
-    defaultValue?: any,
-    minNum?: number,
-    maxNum?: number
-}
-
 // Readline interface for console
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
-// Main function for all input validation
-function validateInput(input: string, additionalArgs: ValidationArgs) {
-    // string validation and default values
-    if (input === "") {
-        if (additionalArgs.defaultValue === undefined) {
-            // Returns failure if input was blank with no defaultValue
-            return {
-                success: false,
-                result: undefined
-            }
-        }
-        // Returns success with the defaultValue if input was blank
-        return {
-            success: true,
-            result: additionalArgs.defaultValue
-        }
-    }
-    // Number validation
-    if (additionalArgs.isNumber) {
-        const numberInput = Number(input);
-        if (isNaN(numberInput)) {
-            return {
-                success: false,
-                result: undefined
-            }
-        } else {
-            // Is number outside the range
-            if (numberInput < (additionalArgs.minNum || -Infinity) || numberInput > (additionalArgs.maxNum || Infinity)) {
-                return {
-                    success: false,
-                    result: undefined
-                }
-            }
-            // Is number a decimal
-            if (numberInput % 1 !== 0) {
-                return {
-                    success: false,
-                    result: undefined
-                }
-            }
-            return {
-                success: true,
-                result: numberInput
-            }
-        }
-    }
-    // Date validation
-    if (additionalArgs.isDate) {
-        // Turns human-readable date format (DD/MM/YYYY) into YYYY-MM-DD so it is understood by JS Date constructor
-        const dayInput = input.split("/").reverse().join("-");
-        const date = new Date(dayInput);
-        // Returns failure if date given was in an invalid format
-        if (isNaN(date.getTime())) {
-            return {
-                success: false,
-                result: undefined
-            };
-        } else {
-            // Checks if validation asks for ONLY future dates
-            if (additionalArgs.futureOnly) {
-                // Returns success if date given was in the future
-                if (date.getTime() > Date.now()) {
-                    return {
-                        success: true,
-                        result: date
-                    };
-                } else {
-                    // Returns failure if date given was in the past
-                    return {
-                        success: false,
-                        result: undefined
-                    };
-                }
-            }
-            // Returns success if user input was a valid date
-            return {
-                success: true,
-                result: date
-            };
-        }
-    }
-    // Boolean validation
-    if (additionalArgs.isBoolean) {
-        const yesRegex = /^(yes|y|yeah|ok|true)$/i;
-        const noRegex = /^(no|n|nope|nah|false)$/i;
-        // Checks for input of yes
-        if (yesRegex.test(input)) {
-            return {
-                success: true,
-                result: true
-            }
-        // Checks for input of no
-        } else if (noRegex.test(input)) {
-            return {
-                success: true,
-                result: false
-            }
-        }
-        // User did not enter in a response of yes or no
-        return {
-            success: false,
-            result: undefined
-        }
-    }
-    // Input is a string, send the user input
-    return {
-        success: true,
-        result: input
-    };
-}
-
 // Main function for asking users questions
-async function askQuestion(question: string, errorMessage: string, additionalArgs: ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100, futureOnly: false}): Promise<any> {
+async function askQuestion(question: string, errorMessage: string, additionalArgs: validation.ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100, futureOnly: false}): Promise<any> {
     let validatedInput: any = undefined;
 
     // Loop to repeatedly ask user question until response is valid
     while (true) {
         const userInput: string = (await rl.question(question)).trim();
         // Validates user input using validateInput function
-        validatedInput = validateInput(userInput, additionalArgs);
+        validatedInput = validation.validateInput(userInput, additionalArgs);
 
         // Returns the result if successful
         if (validatedInput.success) {
@@ -255,49 +134,6 @@ const huts: Array<Hut> = [
 const bookingsFileName: string = "stored_bookings.json";
 const waitlistFileName: string = "waitlist.json";
 
-// Changes a files contents to the given information
-async function updateBookings(fileName: string, bookings: Array<Booking>): Promise<void> {
-    try {
-        await fs.writeFile(fileName, JSON.stringify(bookings, null, 2), "utf8");
-        console.log("Successfully saved!");
-    } catch (error) {
-        console.log("Something went wrong when trying to save.");
-    }
-    
-}
-
-// Gets information from the contents of a file
-async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
-    const bookingsArray: Array<Booking> = []
-    await fs.readFile(fileName, "utf8").then((value) => {
-        const storedJson: Array<{id: number, tramperName: string, hut: Hut, arrivalDate: Date, nights: number, partySize: number, cancelled: boolean}> = JSON.parse(value);
-        // Iterates through information and constructs a Booking object
-        storedJson.forEach(element => {
-            const booking: Booking = {
-                id: element.id,
-                tramperName: element.tramperName,
-                hut: element.hut,
-                arrivalDate: new Date(element.arrivalDate),
-                nights: element.nights,
-                partySize: element.partySize,
-                cancelled: element.cancelled
-            }
-            bookingsArray.push(booking);
-        });
-        // Returns the stored information in proper construct
-        return bookingsArray;
-    }).catch((error) => {
-        // Creates file if it does not exist
-        if (error.code === "ENOENT") {
-            fs.writeFile(fileName, "[]", { flag: 'wx' });
-            return [];
-        }
-        console.log(`Something went wrong while trying to load booking information: ${error}`)
-        process.exit();
-    })
-    return bookingsArray;
-}
-
 // Main function for program
 async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
     let exit = false;
@@ -342,7 +178,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                     // Adds booking to the waitlist if prompted yes
                     if (addWaitlist === true) {
                         waitlist.push(booking);
-                        await updateBookings(waitlistFileName, waitlist);
+                        await fileManager.updateBookings(waitlistFileName, waitlist);
                         console.log(`\n${bookingToString(booking)}\n`);
                     }
                     // Early break to avoid pushing into active bookings
@@ -350,7 +186,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 }
                 // Adds booking to stored bookings
                 bookings.push(booking);
-                await updateBookings(bookingsFileName, bookings);
+                await fileManager.updateBookings(bookingsFileName, bookings);
                 console.log(`\n${bookingToString(booking)}\n`);
                 break;
             // User requests to view booking information
@@ -417,7 +253,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                         }
                     }
                     // Update stored bookings
-                    await updateBookings(bookingsFileName, bookings);
+                    await fileManager.updateBookings(bookingsFileName, bookings);
                     break;
                 }
                 break;
@@ -435,8 +271,8 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
 
 // Stores saved information in memory and then starts the main program, closes interface once completed
 async function start() {
-    const bookings: Array<Booking> = await getStoredBookings(bookingsFileName);
-    const waitlist: Array<Booking> = await getStoredBookings(waitlistFileName);
+    const bookings: Array<Booking> = await fileManager.getStoredBookings(bookingsFileName);
+    const waitlist: Array<Booking> = await fileManager.getStoredBookings(waitlistFileName);
     await main(bookings, waitlist);
     rl.close();
 }
