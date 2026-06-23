@@ -278,10 +278,6 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
                 const conflict: boolean = checkConflict(bookings, arrivalDate, stayLength, partySize, hutId);
-                if (conflict) {
-                    console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
-                    break;
-                }
                 const booking: Booking = {
                     id: bookings.length + 1,
                     tramperName: tramperName,
@@ -291,6 +287,16 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                     partySize: partySize,
                     cancelled: false
                 };
+                if (conflict) {
+                    console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
+                    const addWaitlist: boolean = await askQuestion("Would you like to add the booking to a waitlist instead? ", "Please enter either yes or no", {isBoolean: true});
+                    if (addWaitlist === true) {
+                        waitlist.push(booking);
+                        await updateBookings(waitlistFileName, waitlist);
+                        console.log(`\n${bookingToString(booking)}\n`);
+                    }
+                    break;
+                }
                 bookings.push(booking);
                 await updateBookings(bookingsFileName, bookings);
                 console.log(`\n${bookingToString(booking)}\n`);
