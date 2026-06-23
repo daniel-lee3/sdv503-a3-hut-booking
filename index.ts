@@ -23,6 +23,7 @@ interface Booking {
 interface ValidationArgs {
     isNumber?: boolean,
     isDate?: boolean,
+    isBoolean?: boolean,
     futureOnly?: boolean,
     defaultValue?: any,
     minNum?: number,
@@ -96,6 +97,26 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
                 success: true,
                 result: date
             };
+        }
+    }
+    // Boolean validation
+    if (additionalArgs.isBoolean) {
+        const yesRegex = /^(yes|y|yeah|ok|true)$/i;
+        const noRegex = /^(no|n|nope|nah|false)$/i;
+        if (yesRegex.test(input)) {
+            return {
+                success: true,
+                result: true
+            }
+        } else if (noRegex.test(input)) {
+            return {
+                success: true,
+                result: false
+            }
+        }
+        return {
+            success: false,
+            result: undefined
         }
     }
     // Input is a string, send the user input
