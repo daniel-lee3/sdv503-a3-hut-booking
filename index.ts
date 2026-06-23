@@ -23,6 +23,7 @@ interface Booking {
 interface ValidationArgs {
     isNumber?: boolean,
     isDate?: boolean,
+    isBoolean?: boolean,
     futureOnly?: boolean,
     defaultValue?: any,
     minNum?: number,
@@ -96,6 +97,26 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
                 success: true,
                 result: date
             };
+        }
+    }
+    // Boolean validation
+    if (additionalArgs.isBoolean) {
+        const yesRegex = /^(yes|y|yeah|ok|true)$/i;
+        const noRegex = /^(no|n|nope|nah|false)$/i;
+        if (yesRegex.test(input)) {
+            return {
+                success: true,
+                result: true
+            }
+        } else if (noRegex.test(input)) {
+            return {
+                success: true,
+                result: false
+            }
+        }
+        return {
+            success: false,
+            result: undefined
         }
     }
     // Input is a string, send the user input
@@ -193,14 +214,15 @@ const huts: Array<Hut> = [
     }
 ];
 
-const fileName: string = "stored_bookings.json"
+const bookingsFileName: string = "stored_bookings.json";
+const waitlistFileName: string = "waitlist.json";
 
 async function updateBookings(fileName: string, bookings: Array<Booking>): Promise<void> {
     try {
         await fs.writeFile(fileName, JSON.stringify(bookings, null, 2), "utf8");
-        console.log("Successfully saved!")
+        console.log("Successfully saved!");
     } catch (error) {
-        console.log("Something went wrong when trying to save.")
+        console.log("Something went wrong when trying to save.");
     }
     
 }
@@ -233,7 +255,7 @@ async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
     return bookingsArray;
 }
 
-async function main(bookings: Array<Booking>) {
+async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
     let exit = false;
     while (!exit) {
         const task: number = await askQuestion(`What would you like to do?
@@ -256,10 +278,6 @@ async function main(bookings: Array<Booking>) {
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
                 const conflict: boolean = checkConflict(bookings, arrivalDate, stayLength, partySize, hutId);
-                if (conflict) {
-                    console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
-                    break;
-                }
                 const booking: Booking = {
                     id: bookings.length + 1,
                     tramperName: tramperName,
@@ -269,8 +287,18 @@ async function main(bookings: Array<Booking>) {
                     partySize: partySize,
                     cancelled: false
                 };
+                if (conflict) {
+                    console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
+                    const addWaitlist: boolean = await askQuestion("Would you like to add the booking to a waitlist instead? ", "Please enter either yes or no", {isBoolean: true});
+                    if (addWaitlist === true) {
+                        waitlist.push(booking);
+                        await updateBookings(waitlistFileName, waitlist);
+                        console.log(`\n${bookingToString(booking)}\n`);
+                    }
+                    break;
+                }
                 bookings.push(booking);
-                await updateBookings(fileName, bookings);
+                await updateBookings(bookingsFileName, bookings);
                 console.log(`\n${bookingToString(booking)}\n`);
                 break;
             case 2:
@@ -313,7 +341,16 @@ async function main(bookings: Array<Booking>) {
                         break;
                     }
                     booking.cancelled = true;
-                    await updateBookings(fileName, bookings);
+                    // Is there a booking in the waitlist
+                    while (waitlist[0] !== undefined) {
+                        if (!checkConflict(bookings, waitlist[0].arrivalDate, waitlist[0].nights, waitlist[0].partySize, waitlist[0].hut.id)) {
+                            const newBooking: Booking = waitlist.shift()!
+                            bookings.push(newBooking);
+                        } else {
+                            break;
+                        }
+                    }
+                    await updateBookings(bookingsFileName, bookings);
                     break;
                 }
                 break;
@@ -328,8 +365,9 @@ async function main(bookings: Array<Booking>) {
 }
 
 async function start() {
-    const bookings: Array<Booking> = await getStoredBookings(fileName);
-    await main(bookings);
+    const bookings: Array<Booking> = await getStoredBookings(bookingsFileName);
+    const waitlist: Array<Booking> = await getStoredBookings(waitlistFileName);
+    await main(bookings, waitlist);
     rl.close();
 }
 
