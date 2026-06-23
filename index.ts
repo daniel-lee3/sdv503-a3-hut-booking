@@ -3,6 +3,7 @@ import process = require("node:process");
 import nodeUtil = require("node:util");
 import fs = require("node:fs/promises");
 
+// Data structure for Hut
 interface Hut {
     id: number,
     name: string,
@@ -10,6 +11,7 @@ interface Hut {
     capacity: number;
 }
 
+// Data structure for Bookings
 interface Booking {
     id: number,
     tramperName: string,
@@ -20,6 +22,7 @@ interface Booking {
     cancelled: boolean
 }
 
+// Data structure for Validation, (Primarily for DX)
 interface ValidationArgs {
     isNumber?: boolean,
     isDate?: boolean,
@@ -30,20 +33,24 @@ interface ValidationArgs {
     maxNum?: number
 }
 
+// Readline interface for console
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
 
+// Main function for all input validation
 function validateInput(input: string, additionalArgs: ValidationArgs) {
     // string validation and default values
     if (input === "") {
         if (additionalArgs.defaultValue === undefined) {
+            // Returns failure if input was blank with no defaultValue
             return {
                 success: false,
                 result: undefined
             }
         }
+        // Returns success with the defaultValue if input was blank
         return {
             success: true,
             result: additionalArgs.defaultValue
@@ -58,6 +65,7 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
                 result: undefined
             }
         } else {
+            // Is number outside the range
             if (numberInput < (additionalArgs.minNum || -Infinity) || numberInput > (additionalArgs.maxNum || Infinity)) {
                 return {
                     success: false,
@@ -72,27 +80,33 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
     }
     // Date validation
     if (additionalArgs.isDate) {
+        // Turns human-readable date format (DD/MM/YYYY) into YYYY-MM-DD so it is understood by JS Date constructor
         const dayInput = input.split("/").reverse().join("-");
         const date = new Date(dayInput);
+        // Returns failure if date given was in an invalid format
         if (isNaN(date.getTime())) {
             return {
                 success: false,
                 result: undefined
             };
         } else {
+            // Checks if validation asks for ONLY future dates
             if (additionalArgs.futureOnly) {
+                // Returns success if date given was in the future
                 if (date.getTime() > Date.now()) {
                     return {
                         success: true,
                         result: date
                     };
                 } else {
+                    // Returns failure if date given was in the past
                     return {
                         success: false,
                         result: undefined
                     };
                 }
             }
+            // Returns success if user input was a valid date
             return {
                 success: true,
                 result: date
@@ -103,17 +117,20 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
     if (additionalArgs.isBoolean) {
         const yesRegex = /^(yes|y|yeah|ok|true)$/i;
         const noRegex = /^(no|n|nope|nah|false)$/i;
+        // Checks for input of yes
         if (yesRegex.test(input)) {
             return {
                 success: true,
                 result: true
             }
+        // Checks for input of no
         } else if (noRegex.test(input)) {
             return {
                 success: true,
                 result: false
             }
         }
+        // User did not enter in a response of yes or no
         return {
             success: false,
             result: undefined
@@ -126,15 +143,20 @@ function validateInput(input: string, additionalArgs: ValidationArgs) {
     };
 }
 
+// Main function for asking users questions
 async function askQuestion(question: string, errorMessage: string, additionalArgs: ValidationArgs = {isNumber: false, isDate: false, defaultValue: undefined, minNum: 0, maxNum: 100, futureOnly: false}): Promise<any> {
     let validatedInput: any = undefined;
 
+    // Loop to repeatedly ask user question until response is valid
     while (true) {
         const userInput: string = (await rl.question(question)).trim();
+        // Validates user input using validateInput function
         validatedInput = validateInput(userInput, additionalArgs);
 
+        // Returns the result if successful
         if (validatedInput.success) {
             return validatedInput.result;
+        // If input was invalid, display error and ask again
         } else {
             console.log(errorMessage);
             continue;
@@ -142,6 +164,7 @@ async function askQuestion(question: string, errorMessage: string, additionalArg
     }
 }
 
+// Finds a Hut object from the Id
 function getHutFromId(hutId: number): Hut|null {
     for (const hut of huts) {
         if (hut.id === hutId) {
@@ -151,6 +174,7 @@ function getHutFromId(hutId: number): Hut|null {
     return null;
 }
 
+// Finds a Booking object from the Id
 function getBookingFromId(bookings: Array<Booking>, bookingId: number): Booking|undefined {
     for (const booking of bookings) {
         if (booking.id === bookingId) {
@@ -159,6 +183,7 @@ function getBookingFromId(bookings: Array<Booking>, bookingId: number): Booking|
     }
 }
 
+// Finds how many spaces are occupied in a hut on a given day
 function getOccupiedSpaces(bookings: Array<Booking>, hutId: number, day: Date): number {
     const effectiveBookings : Array<Booking> = bookings.filter((booking: Booking) => {
         if (booking.cancelled) {
@@ -171,6 +196,7 @@ function getOccupiedSpaces(bookings: Array<Booking>, hutId: number, day: Date): 
     return effectiveBookings.reduce((total, booking) => total + booking.partySize, 0);
 }
 
+// Checks if booking information conflicts with current bookings
 function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: number, partySize: number, hutId: number): boolean {
     const hut: Hut|null = getHutFromId(hutId);
     if (hut === null) {
@@ -178,8 +204,10 @@ function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: num
     }
 
     const endDay: Date = new Date(startDay.getTime() + (stayLength * 86400000));
+    // Iterates through each day to check for conflict on any day the booking will be active
     for (let i: number = startDay.getTime(); i < endDay.getTime(); i = i + 86400000) {
         const occupied = getOccupiedSpaces(bookings, hutId, new Date(i))
+        // Returns true if a conflict was found on a given day
         if (hut.capacity < occupied + partySize) {
             return true;
         }
@@ -187,6 +215,7 @@ function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: num
     return false;
 }
 
+// Function that takes a booking and turns it into a readable string that is formatted and sectioned
 function bookingToString(booking: Booking): string {
     const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`
     const lines = []
@@ -205,6 +234,7 @@ function bookingToString(booking: Booking): string {
     return lines.join("\n");
 }
 
+// List of huts in the system
 const huts: Array<Hut> = [
     {
         id: 1,
@@ -214,9 +244,11 @@ const huts: Array<Hut> = [
     }
 ];
 
+// File names for saved data
 const bookingsFileName: string = "stored_bookings.json";
 const waitlistFileName: string = "waitlist.json";
 
+// Changes a files contents to the given information
 async function updateBookings(fileName: string, bookings: Array<Booking>): Promise<void> {
     try {
         await fs.writeFile(fileName, JSON.stringify(bookings, null, 2), "utf8");
@@ -227,10 +259,12 @@ async function updateBookings(fileName: string, bookings: Array<Booking>): Promi
     
 }
 
+// Gets information from the contents of a file
 async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
     const bookingsArray: Array<Booking> = []
     await fs.readFile(fileName, "utf8").then((value) => {
         const storedJson: Array<{id: number, tramperName: string, hut: Hut, arrivalDate: Date, nights: number, partySize: number, cancelled: boolean}> = JSON.parse(value);
+        // Iterates through information and constructs a Booking object
         storedJson.forEach(element => {
             const booking: Booking = {
                 id: element.id,
@@ -243,8 +277,10 @@ async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
             }
             bookingsArray.push(booking);
         });
+        // Returns the stored information in proper construct
         return bookingsArray;
     }).catch((error) => {
+        // Creates file if it does not exist
         if (error.code === "ENOENT") {
             fs.writeFile(fileName, "[]", { flag: 'wx' });
             return [];
@@ -255,6 +291,7 @@ async function getStoredBookings(fileName: string): Promise<Array<Booking>> {
     return bookingsArray;
 }
 
+// Main function for program
 async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
     let exit = false;
     while (!exit) {
@@ -266,10 +303,13 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
 `, "Please provide an input of 1, 2, 3 or 4", {isNumber: true, minNum: 1, maxNum: 4});
         
         switch(task) {
+            // User requests to add a new booking
             case 1:
+                // Asks all the questions
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
                 const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 1, maxNum: huts.length});
                 const hut: Hut|null = getHutFromId(hutId)
+                // Fail-safe in the case something goes wrong
                 if (hut === null) {
                     console.log(`Hut ${hutId} is an invalid id`);
                     break;
@@ -278,6 +318,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 const arrivalDate: Date = await askQuestion("What day is the tramper arriving? (DD/MM/YYYY) ", "Please enter a valid future day following the format", {isDate: true, futureOnly: true});
                 const stayLength: number = await askQuestion("How many days will you be staying? ", "You must enter in a valid number of 1 or above", {isNumber: true, minNum: 1});
                 const conflict: boolean = checkConflict(bookings, arrivalDate, stayLength, partySize, hutId);
+                // Constructs Booking with provided information
                 const booking: Booking = {
                     id: bookings.length + 1,
                     tramperName: tramperName,
@@ -287,55 +328,71 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                     partySize: partySize,
                     cancelled: false
                 };
+                // Prompt user to add to waitlist if there is conflict with booking
                 if (conflict) {
                     console.log(`There is not enough capacity for Hut ${hutId} across those days.`);
                     const addWaitlist: boolean = await askQuestion("Would you like to add the booking to a waitlist instead? ", "Please enter either yes or no", {isBoolean: true});
+                    // Adds booking to the waitlist if prompted yes
                     if (addWaitlist === true) {
                         waitlist.push(booking);
                         await updateBookings(waitlistFileName, waitlist);
                         console.log(`\n${bookingToString(booking)}\n`);
                     }
+                    // Early break to avoid pushing into active bookings
                     break;
                 }
+                // Adds booking to stored bookings
                 bookings.push(booking);
                 await updateBookings(bookingsFileName, bookings);
                 console.log(`\n${bookingToString(booking)}\n`);
                 break;
+            // User requests to view booking information
             case 2:
                 const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
                 const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (leave blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 1, maxNum: huts.length, defaultValue: -1});
                 const bookingsInHut: Array<Booking> = bookings.filter((bookingInfo) => {
+                    // Skips validation if user requests to view all huts
                     if (viewingHutId === -1) {
                         return true;
                     }
+                    // Filters bookings by the hutId
                     if (getHutFromId(viewingHutId) === bookingInfo.hut) {
                         return true;
                     }
                     return false;
                 })
                 if (day === null) {
+                    // Skips validation if user requests to view all days, displays each booking
                     bookingsInHut.forEach(element => {
                         console.log(`\n${bookingToString(element)}\n`);
                     });
                     break;
                 } else {
+                    // Filters bookings by activity on given day
                     const availableBookings: Array<Booking> = bookingsInHut.filter((bookingInfo) => {
                         const startDay: Date = bookingInfo.arrivalDate;
                         const endDay: Date = new Date(startDay.getTime() + (bookingInfo.nights * 86400000));
                         return startDay <= day && endDay > day;
                     })
+                    // Displays each booking that passes validation
                     availableBookings.forEach(element => {
                         console.log(`\n${bookingToString(element)}\n`);
                     });
                     break;
                 }
+            // User requests to cancel a booking
             case 3:
                 while (true) {
-                    const bookingId: number = await askQuestion("What booking would you like to cancel? Booking #", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length});
+                    const bookingId: number = await askQuestion("What booking would you like to cancel? (Leave blank to abort) Booking #", "Please enter a valid booking Id", {isNumber: true, minNum: 1, maxNum: bookings.length, defaultValue: -1});
                     const booking: Booking|undefined = getBookingFromId(bookings, bookingId);
                     if (booking === undefined) {
+                        // Abort if user left input blank
+                        if (bookingId === -1) {
+                            break;
+                        }
                         continue;
                     }
+                    // Decline cancellation if booking is active or has already happened
                     if (booking.arrivalDate < new Date(Date.now())) {
                         console.log("It is too late to cancel this booking");
                         break;
@@ -343,20 +400,25 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                     booking.cancelled = true;
                     // Is there a booking in the waitlist
                     while (waitlist[0] !== undefined) {
+                        // Checks if the waiting booking can fit into the hut
                         if (!checkConflict(bookings, waitlist[0].arrivalDate, waitlist[0].nights, waitlist[0].partySize, waitlist[0].hut.id)) {
+                            // Moves first booking in the waitlist into the active bookings
                             const newBooking: Booking = waitlist.shift()!
                             bookings.push(newBooking);
                         } else {
                             break;
                         }
                     }
+                    // Update stored bookings
                     await updateBookings(bookingsFileName, bookings);
                     break;
                 }
                 break;
+            // User requests to exit the program
             case 4:
                 exit = true;
                 break;
+            // User inputs an invalid option
             default:
                 console.log("Please provide an input of 1, 2, 3 or 4");
                 break;
@@ -364,6 +426,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
     }
 }
 
+// Stores saved information in memory and then starts the main program, closes interface once completed
 async function start() {
     const bookings: Array<Booking> = await getStoredBookings(bookingsFileName);
     const waitlist: Array<Booking> = await getStoredBookings(waitlistFileName);
