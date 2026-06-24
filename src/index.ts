@@ -163,7 +163,10 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
             case 1:
                 // Asks all the questions
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
-                const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 1, maxNum: huts.length});
+                huts.forEach((hutObject) => {
+                    console.log(hutToString(hutObject));
+                })
+                const hutId: number = await askQuestion("What hut are you requesting? Hut #", "Please enter a valid hut id", {isNumber: true, minNum: 1, maxNum: huts.length});
                 const hut: Hut|null = getHutFromId(hutId);
                 // Fail-safe in the case something goes wrong
                 if (hut === null) {
@@ -205,6 +208,9 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
             // User requests to view booking information
             case 2:
                 const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
+                huts.forEach((hutObject) => {
+                    console.log(hutToString(hutObject));
+                })
                 const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (leave blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 1, maxNum: huts.length, defaultValue: -1});
                 const viewingHut: Hut|null = getHutFromId(viewingHutId);
                 // Fail-safe in the case something goes wrong
