@@ -193,13 +193,19 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
             case 2:
                 const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
                 const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (leave blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 1, maxNum: huts.length, defaultValue: -1});
+                const viewingHut: Hut|null = getHutFromId(viewingHutId);
+                // Fail-safe in the case something goes wrong
+                if (viewingHut === null) {
+                    console.log(`Hut ${viewingHutId} is an invalid id`);
+                    break;
+                }
                 const bookingsInHut: Array<Booking> = bookings.filter((bookingInfo) => {
                     // Skips validation if user requests to view all huts
                     if (viewingHutId === -1) {
                         return true;
                     }
                     // Filters bookings by the hutId
-                    if (getHutFromId(viewingHutId) === bookingInfo.hut) {
+                    if (viewingHut.id === bookingInfo.hut.id) {
                         return true;
                     }
                     return false;
