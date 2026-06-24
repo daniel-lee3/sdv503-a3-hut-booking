@@ -103,10 +103,10 @@ function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: num
 
 // Function that takes a booking and turns it into a readable string that is formatted and sectioned
 function bookingToString(booking: Booking): string {
-    const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`
-    const lines = []
+    const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`;
+    const lines = [];
     if (booking.cancelled) {
-        lines.push("CANCELLED")
+        lines.push("CANCELLED");
     }
     lines.push(`${heading}`);
     lines.push(`Tramper: ${booking.tramperName}`);
@@ -116,6 +116,19 @@ function bookingToString(booking: Booking): string {
     lines.push(`Time of stay: ${booking.nights} days`);
     lines.push(`Party size: ${booking.partySize}`);
     lines.push(`=`.repeat(heading.length));
+
+    return lines.join("\n");
+}
+
+// Function that takes a hut and turns it into a readable string that is formatted and sectioned
+function hutToString(hut: Hut): string {
+    const heading: string = `${'='.repeat(10)} Hut #${hut.id} ${'='.repeat(10)}`;
+    const lines = [];
+    lines.push(`${heading}`);
+    lines.push(`Name: ${hut.name}`);
+    lines.push(`Location: ${hut.location}`);
+    lines.push(`Capacity: ${hut.capacity}`);
+    lines.push('='.repeat(heading.length));
 
     return lines.join("\n");
 }
@@ -151,7 +164,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 // Asks all the questions
                 const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
                 const hutId: number = await askQuestion("What hut is the tramper requesting? Hut ", "Please enter a valid hut", {isNumber: true, minNum: 1, maxNum: huts.length});
-                const hut: Hut|null = getHutFromId(hutId)
+                const hut: Hut|null = getHutFromId(hutId);
                 // Fail-safe in the case something goes wrong
                 if (hut === null) {
                     console.log(`Hut ${hutId} is an invalid id`);
