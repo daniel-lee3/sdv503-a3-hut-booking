@@ -140,6 +140,24 @@ const huts: Array<Hut> = [
         name: "Mintaro Hut",
         location: "Milford Track",
         capacity: 40
+    },
+    {
+        id: 2,
+        name: "Dumpling Hut",
+        location: "Milford Track",
+        capacity: 40
+    },
+    {
+        id: 3,
+        name: "Clinton Hut",
+        location: "Milford Track",
+        capacity: 40
+    },
+    {
+        id: 4,
+        name: "Worsley Hut",
+        location: "Western Fiordland",
+        capacity: 12
     }
 ];
 
