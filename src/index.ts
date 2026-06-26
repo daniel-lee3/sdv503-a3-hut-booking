@@ -225,7 +225,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 break;
             // User requests to view booking information
             case 2:
-                const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
+                const day: null|Date = await askQuestion("What day would you like to view bookings for? (leave blank for all bookings) (DD/MM/YYYY) ", "Please enter in a valid date", {isDate: true, futureOnly: false, defaultValue: null});
                 huts.forEach((hutObject) => {
                     console.log(hutToString(hutObject));
                 })
