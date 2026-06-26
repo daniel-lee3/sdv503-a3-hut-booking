@@ -103,10 +103,10 @@ function checkConflict(bookings: Array<Booking>, startDay: Date, stayLength: num
 
 // Function that takes a booking and turns it into a readable string that is formatted and sectioned
 function bookingToString(booking: Booking): string {
-    const heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`;
+    let heading: string = `${`=`.repeat(10)} Booking #${booking.id} ${`=`.repeat(10)}`;
     const lines = [];
     if (booking.cancelled) {
-        lines.push("CANCELLED");
+        heading = `${`=`.repeat(10)} Booking #${booking.id} (CANCELLED) ${`=`.repeat(10)}`;
     }
     lines.push(`${heading}`);
     lines.push(`Tramper: ${booking.tramperName}`);
@@ -232,7 +232,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 const viewingHutId: number = await askQuestion("What Hut ID would you like to view bookings for? (leave blank for all huts)", "Please enter a valid hut Id", {isNumber: true, minNum: 1, maxNum: huts.length, defaultValue: -1});
                 const viewingHut: Hut|null = getHutFromId(viewingHutId);
                 // Fail-safe in the case something goes wrong
-                if (viewingHut === null) {
+                if (viewingHut === null && viewingHutId !== -1) {
                     console.log(`Hut ${viewingHutId} is an invalid id`);
                     break;
                 }
@@ -242,7 +242,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                         return true;
                     }
                     // Filters bookings by the hutId
-                    if (viewingHut.id === bookingInfo.hut.id) {
+                    if (viewingHut!.id === bookingInfo.hut.id) {
                         return true;
                     }
                     return false;
@@ -250,7 +250,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
                 if (day === null) {
                     // Skips validation if user requests to view all days, displays each booking
                     bookingsInHut.forEach(element => {
-                        console.log(`\n${bookingToString(element)}\n`);
+                        console.log(`${bookingToString(element)}`);
                     });
                     break;
                 } else {
