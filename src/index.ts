@@ -180,7 +180,7 @@ async function main(bookings: Array<Booking>, waitlist: Array<Booking>) {
             // User requests to add a new booking
             case 1:
                 // Asks all the questions
-                const tramperName: string = await askQuestion("What is the name of the tramper? ", "You must enter in a name that isn't blank");
+                const tramperName: string = await askQuestion("What is the name of the tramper? ", "Input must not be blank or contain special characters");
                 huts.forEach((hutObject) => {
                     console.log(hutToString(hutObject));
                 })

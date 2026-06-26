@@ -113,9 +113,17 @@ export function validateInput(input: string, additionalArgs: ValidationArgs) {
             result: undefined
         }
     }
-    // Input is a string, send the user input
-    return {
-        success: true,
-        result: input
-    };
+    // Input is a string, validate string
+    const stringRegex = /[a-zA-Z\s]/
+    if (stringRegex.test(input)) {
+        return {
+            success: true,
+            result: input
+        };
+    } else {
+        return {
+            success: false,
+            result: undefined
+        }
+    }
 }
