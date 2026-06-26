@@ -48,7 +48,7 @@ export function validateInput(input, additionalArgs) {
     // Date validation
     if (additionalArgs.isDate) {
         // Turns human-readable date format (DD/MM/YYYY) into YYYY-MM-DD so it is understood by JS Date constructor
-        const dayInput = input.split("/").reverse().join("-");
+        const dayInput = input.split("/").length === 3 ? input.split("/").reverse().join("-") : NaN;
         const date = new Date(dayInput);
         // Returns failure if date given was in an invalid format
         if (isNaN(date.getTime())) {
