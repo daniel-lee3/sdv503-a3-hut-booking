@@ -114,7 +114,7 @@ export function validateInput(input: string, additionalArgs: ValidationArgs) {
         }
     }
     // Input is a string, validate string
-    const stringRegex = /[a-zA-Z\s]/
+    const stringRegex = /^[a-zA-Z\s]+$/
     if (stringRegex.test(input)) {
         return {
             success: true,
