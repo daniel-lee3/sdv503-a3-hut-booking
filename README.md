@@ -3,8 +3,8 @@ Assignment 3 Project
 
 # Installation Requirement
 
-You will need a [Node.js](https://nodejs.org/en/download) installation
-You need typescript installed using the command
+You will need a [Node.js](https://nodejs.org/en/download) installation.
+You will also need typescript installed by using the command
 ```bash
 npm install -g typescript
 ```
