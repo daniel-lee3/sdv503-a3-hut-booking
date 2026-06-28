@@ -5,15 +5,21 @@ Assignment 3 Project
 
 You will need a [Node.js](https://nodejs.org/en/download) installation
 You need typescript installed using the command
-> npm install -g typescript
+```bash
+npm install -g typescript
+```
 
 # Installation
 
 Compile index.ts using the command
-> npx tsc src/index.ts
+```bash
+npx tsc src/index.ts
+```
 
 You can run the script using
-> node src/index.js
+```bash
+node src/index.js
+```
 
 # Data Information
 
